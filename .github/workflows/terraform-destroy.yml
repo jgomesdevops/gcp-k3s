@@ -1,0 +1,53 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm you want to destroy all infrastructure'
+        required: true
+        type: string
+
+env:
+  GCP_REGION: europe-west1
+  GCP_ZONE: europe-west1-b
+  TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+jobs:
+  terraform-destroy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    if: github.event.inputs.confirm_destroy == 'DESTROY'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        token_format: 'id_token'
+        id_token_audience: 'https://token.actions.githubusercontent.com'
+        workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+        service_account: 'github-actions-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.0"
+
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init
+
+    - name: Terraform Plan Destroy
+      working-directory: ./terraform
+      run: terraform plan -destroy -no-color -out=tfplan-destroy
+
+    - name: Terraform Destroy
+      working-directory: ./terraform
+      run: terraform apply -auto-approve tfplan-destroy 

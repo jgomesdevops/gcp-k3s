@@ -12,18 +12,21 @@ apt-get upgrade -y
 # Install required packages
 apt-get install -y curl wget git ca-certificates gnupg lsb-release
 
-# Configure Docker for Artifact Registry
-echo "Configuring Docker for Artifact Registry..."
-gcloud auth configure-docker europe-west1-docker.pkg.dev
+# Install gcloud CLI if not present
+if ! command -v gcloud &> /dev/null; then
+    echo "Installing gcloud CLI..."
+    curl https://sdk.cloud.google.com | bash
+    export PATH=$PATH:/root/google-cloud-sdk/bin
+fi
 
-# Pull the latest image from Artifact Registry
-echo "Pulling latest image from Artifact Registry..."
-docker pull europe-west1-docker.pkg.dev/PROJECT_ID/node-app-repo/node-app:latest || echo "Failed to pull image from Artifact Registry"
-
-# Install Docker (required for k3s)
+# Install Docker first (required for k3s)
 echo "Installing Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh || echo "Docker installation failed, continuing..."
+
+# Configure authentication for Artifact Registry (after Docker is installed)
+echo "Configuring authentication for Artifact Registry..."
+gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet || echo "gcloud auth configure-docker failed, continuing..."
 
 # Install k3s with security configurations
 echo "Installing k3s..."
@@ -40,5 +43,10 @@ echo "Verifying installations..."
 which docker || echo "Docker not found"
 which k3s || echo "k3s not found"
 which kubectl || echo "kubectl not found"
+
+# Verify credential helper configuration
+echo "Verifying credential helper configuration..."
+echo "Docker config contents:"
+cat ~/.docker/config.json || echo "Docker config not found"
 
 echo "Setup script finished." 
