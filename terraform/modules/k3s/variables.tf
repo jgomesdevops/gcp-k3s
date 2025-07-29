@@ -100,7 +100,7 @@ variable "service_account_description" {
 variable "service_account_roles" {
   description = "List of IAM roles to assign to the service account"
   type        = list(string)
-  default     = [
+  default = [
     "roles/editor",
     # "roles/compute.instanceAdmin.v1",
     # "roles/storage.admin",
@@ -194,7 +194,7 @@ variable "instance_tags" {
 variable "labels" {
   description = "Labels to apply to resources"
   type        = map(string)
-  default     = {
+  default = {
     environment = "production"
     managed-by  = "terraform"
     project     = "k3s-cluster"
@@ -239,9 +239,8 @@ variable "backend_service_timeout" {
   default     = 10
 }
 
-# Artifact Registry Variables
 variable "artifact_registry_repository_id" {
   description = "ID of the Artifact Registry repository"
   type        = string
   default     = "node-app-repo"
-} 
+}

@@ -53,7 +53,7 @@ resource "google_compute_firewall" "lb_health_check" {
     ports    = [tostring(var.health_check_port)]
   }
 
-  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]  # Google Cloud Load Balancer health check IPs
+  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"] # Google Cloud Load Balancer health check IPs
   target_tags   = var.instance_tags
 }
 

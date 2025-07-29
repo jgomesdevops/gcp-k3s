@@ -66,14 +66,14 @@ jobs:
         name: terraform-plan
         path: terraform/tfplan
 
-  # Terraform Apply (manual trigger only, requires environment approval)
+  # Terraform Apply (automatic on push to main)
   terraform-apply:
     needs: terraform-plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - name: Checkout code

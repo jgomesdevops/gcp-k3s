@@ -32,8 +32,8 @@ resource "google_compute_backend_service" "this" {
   timeout_sec = var.backend_service_timeout
 
   backend {
-    group = google_compute_network_endpoint_group.this[0].id
-    balancing_mode = var.balancing_mode
+    group                 = google_compute_network_endpoint_group.this[0].id
+    balancing_mode        = var.balancing_mode
     max_rate_per_endpoint = var.max_rate_per_endpoint
   }
 
