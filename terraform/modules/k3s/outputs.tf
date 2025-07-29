@@ -42,13 +42,3 @@ output "instance_name" {
   description = "Name of the k3s instance"
   value       = google_compute_instance.this.name
 }
-
-output "artifact_registry_repository" {
-  description = "Artifact Registry repository name"
-  value       = google_artifact_registry_repository.this.name
-}
-
-output "artifact_registry_location" {
-  description = "Artifact Registry repository location"
-  value       = google_artifact_registry_repository.this.location
-} 

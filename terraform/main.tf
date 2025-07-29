@@ -38,6 +38,4 @@ module "k3s_cluster" {
     project    = "gcp-k3s"
     team       = "devops"
   }
-
-  artifact_registry_repository_id = "node-app-repo"
 }

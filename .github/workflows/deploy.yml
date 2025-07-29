@@ -22,6 +22,44 @@ env:
   TF_VAR_instance_name: this-instance
 
 jobs:
+  # Build and Push Docker Image (first step)
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Clone node-app-http-docker repository
+      run: git clone https://github.com/eaccmk/node-app-http-docker.git
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        token_format: 'id_token'
+        id_token_audience: 'https://token.actions.githubusercontent.com'
+        workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+        service_account: 'github-actions-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
+
+    - name: Build Docker Image
+      run: |
+        cd node-app-http-docker
+        docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest .
+        docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }} .
+
+    - name: Push Docker Image
+      run: |
+        docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest
+        docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }}
+
   # Terraform Plan (runs on push and PR)
   terraform-plan:
     runs-on: ubuntu-latest
@@ -68,7 +106,7 @@ jobs:
 
   # Terraform Apply (automatic on push to main)
   terraform-apply:
-    needs: terraform-plan
+    needs: [build-and-push-image, terraform-plan]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -108,39 +146,5 @@ jobs:
       working-directory: ./terraform
       run: terraform apply -auto-approve tfplan
 
-  # Build and Push Docker Image (after infrastructure is deployed)
-  build-and-push-image:
-    needs: terraform-apply
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
-    - name: Google Auth
-      id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-        token_format: 'id_token'
-        id_token_audience: 'https://token.actions.githubusercontent.com'
-        workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
-        service_account: 'github-actions-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-
-    - name: Configure Docker for Artifact Registry
-      run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
-
-    - name: Build Docker Image
-      run: |
-        cd node-app-http-docker
-        docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest .
-        docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }} .
-
-    - name: Push Docker Image
-      run: |
-        docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest
-        docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }}
 

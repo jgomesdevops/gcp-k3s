@@ -42,13 +42,3 @@ output "instance_name" {
   description = "Name of the k3s instance"
   value       = module.k3s_cluster.instance_name
 }
-
-output "artifact_registry_repository" {
-  description = "Artifact Registry repository name"
-  value       = module.k3s_cluster.artifact_registry_repository
-}
-
-output "artifact_registry_location" {
-  description = "Artifact Registry repository location"
-  value       = module.k3s_cluster.artifact_registry_location
-} 

@@ -238,9 +238,3 @@ variable "backend_service_timeout" {
   type        = number
   default     = 10
 }
-
-variable "artifact_registry_repository_id" {
-  description = "ID of the Artifact Registry repository"
-  type        = string
-  default     = "node-app-repo"
-}

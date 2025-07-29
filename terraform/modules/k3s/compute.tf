@@ -8,10 +8,15 @@ resource "google_service_account" "this" {
 # IAM role for k3s service account
 resource "google_project_iam_member" "this" {
   for_each = toset(var.service_account_roles)
-
+  
   project = var.gcp_project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.this.email}"
+}
+
+# Create service account key
+resource "google_service_account_key" "this" {
+  service_account_id = google_service_account.this.name
 }
 
 # k3s VM instance
@@ -40,6 +45,7 @@ resource "google_compute_instance" "this" {
   metadata = {
     enable-oslogin = var.enable_oslogin ? "TRUE" : "FALSE"
     gcp-region     = var.gcp_region
+    sa-key         = base64decode(google_service_account_key.this.private_key)
   }
 
   metadata_startup_script = file("${path.module}/scripts/k3s-setup.sh")
