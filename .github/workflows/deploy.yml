@@ -19,6 +19,7 @@ env:
   TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
   TF_VAR_gcp_region: ${{ vars.GCP_REGION }}
   TF_VAR_gcp_zone: ${{ vars.GCP_ZONE }}
+  TF_VAR_instance_name: this-instance
 
 jobs:
   # Terraform Plan (runs on push and PR)
@@ -143,66 +144,3 @@ jobs:
         docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest
         docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }}
 
-  # Deploy to K3s Cluster
-  deploy-to-k3s:
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Google Auth
-      id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-        token_format: 'id_token'
-        id_token_audience: 'https://token.actions.githubusercontent.com'
-        workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
-        service_account: 'github-actions-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
-
-    - name: Get K3s Cluster Credentials
-      run: |
-        # Get the VM instance details
-        VM_NAME=$(gcloud compute instances list --filter="name~this" --format="value(name)" --limit=1)
-        ZONE=$(gcloud compute instances list --filter="name~this" --format="value(zone)" --limit=1)
-        
-        # Copy kubeconfig from the VM
-        gcloud compute scp $VM_NAME:/etc/rancher/k3s/k3s.yaml ./k3s-config --zone=$ZONE
-        
-        # Update the kubeconfig to use the VM's external IP
-        VM_IP=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
-        sed -i "s/127.0.0.1/$VM_IP/g" ./k3s-config
-        
-        # Set KUBECONFIG environment variable
-        export KUBECONFIG=./k3s-config
-        
-        # Verify connection to K3s cluster
-        kubectl cluster-info
-        kubectl get nodes
-
-    - name: Setup Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: 'latest'
-
-    - name: Deploy Helm Chart with Dynamic Image Tag
-      run: |
-        # Use the kubeconfig we copied from the VM
-        export KUBECONFIG=./k3s-config
-        
-        helm upgrade --install k3s-app ./helm/k3s-app \
-          --namespace node-app \
-          --create-namespace \
-          --set app.imageTagOverride=${{ github.sha }} \
-          --set app.image.repository=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app \
-          --wait --timeout=5m

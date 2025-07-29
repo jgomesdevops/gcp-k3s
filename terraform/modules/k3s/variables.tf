@@ -101,9 +101,12 @@ variable "service_account_roles" {
   description = "List of IAM roles to assign to the service account"
   type        = list(string)
   default     = [
-    "roles/compute.instanceAdmin.v1",
-    "roles/storage.admin",
-    "roles/compute.osAdminLogin"
+    "roles/editor",
+    # "roles/compute.instanceAdmin.v1",
+    # "roles/storage.admin",
+    # "roles/compute.osAdminLogin",
+    # "roles/iap.tunnelResourceAccessor",
+    # "roles/artifactregistry.admin"
   ]
 }
 

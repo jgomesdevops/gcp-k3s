@@ -24,17 +24,19 @@ echo "Installing Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh || echo "Docker installation failed, continuing..."
 
-# Configure authentication for Artifact Registry (after Docker is installed)
-echo "Configuring authentication for Artifact Registry..."
-gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet || echo "gcloud auth configure-docker failed, continuing..."
-
 # Install k3s with security configurations
 echo "Installing k3s..."
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--docker --write-kubeconfig-mode 644 --tls-san $(hostname) --disable traefik --disable servicelb" sh - || echo "k3s installation failed"
+curl -sfL https://get.k3s.io | sh - || echo "k3s installation failed"
 
 # Wait for k3s to be ready
 echo "Waiting for k3s to be ready..."
 sleep 30
+
+# Install Helm
+echo "Installing Helm..."
+curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz | tar xz
+sudo mv linux-amd64/helm /usr/local/bin/
+rm -rf linux-amd64
 
 echo "k3s setup completed successfully!"
 
@@ -43,6 +45,7 @@ echo "Verifying installations..."
 which docker || echo "Docker not found"
 which k3s || echo "k3s not found"
 which kubectl || echo "kubectl not found"
+which helm || echo "Helm not found"
 
 # Verify credential helper configuration
 echo "Verifying credential helper configuration..."

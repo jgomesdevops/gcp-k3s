@@ -17,4 +17,9 @@ variable "vm_user" {
   description = "Default user for the VM"
   type        = string
   default     = "debian"
-} 
+}
+
+variable "instance_name" {
+  description = "Name of the instance"
+  type        = string
+}

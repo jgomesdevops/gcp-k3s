@@ -13,7 +13,7 @@ module "k3s_cluster" {
   subnet_cidr = "10.0.0.0/24"
 
   # Compute configuration
-  instance_name  = "this-instance"
+  instance_name  = var.instance_name
   machine_type   = "e2-small"
   disk_size_gb   = 20
   disk_image     = "ubuntu-os-cloud/ubuntu-2204-lts"
