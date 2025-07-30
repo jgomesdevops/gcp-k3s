@@ -8,7 +8,7 @@ resource "google_service_account" "this" {
 # IAM role for k3s service account
 resource "google_project_iam_member" "this" {
   for_each = toset(var.service_account_roles)
-  
+
   project = var.gcp_project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.this.email}"
@@ -45,6 +45,7 @@ resource "google_compute_instance" "this" {
   metadata = {
     enable-oslogin = var.enable_oslogin ? "TRUE" : "FALSE"
     gcp-region     = var.gcp_region
+    gcp-project-id = var.gcp_project_id
     sa-key         = base64decode(google_service_account_key.this.private_key)
   }
 

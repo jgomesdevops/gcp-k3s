@@ -14,7 +14,7 @@ module "k3s_cluster" {
 
   # Compute configuration
   instance_name  = var.instance_name
-  machine_type   = "e2-small"
+  machine_type   = "e2-medium"
   disk_size_gb   = 20
   disk_image     = "ubuntu-os-cloud/ubuntu-2204-lts"
   enable_oslogin = true
