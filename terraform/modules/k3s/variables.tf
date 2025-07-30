@@ -110,43 +110,6 @@ variable "service_account_roles" {
   ]
 }
 
-# Load Balancer Variables
-variable "enable_load_balancer" {
-  description = "Enable public load balancer"
-  type        = bool
-  default     = true
-}
-
-variable "load_balancer_name" {
-  description = "Name of the load balancer"
-  type        = string
-  default     = "app-global-forwarding-rule"
-}
-
-variable "load_balancer_port" {
-  description = "Port for the load balancer"
-  type        = number
-  default     = 80
-}
-
-variable "app_nodeport" {
-  description = "NodePort for the application"
-  type        = number
-  default     = 30000
-}
-
-variable "health_check_path" {
-  description = "Health check path for the application"
-  type        = string
-  default     = "/health"
-}
-
-variable "health_check_port" {
-  description = "Health check port"
-  type        = number
-  default     = 30000
-}
-
 # Firewall Variables
 variable "internal_firewall_name" {
   description = "Name of the internal firewall rule"
@@ -166,24 +129,6 @@ variable "app_firewall_name" {
   default     = "app-nodeport"
 }
 
-variable "lb_health_check_firewall_name" {
-  description = "Name of the load balancer health check firewall rule"
-  type        = string
-  default     = "lb-health-check"
-}
-
-variable "lb_http_firewall_name" {
-  description = "Name of the HTTP firewall rule"
-  type        = string
-  default     = "lb-http"
-}
-
-variable "lb_https_firewall_name" {
-  description = "Name of the HTTPS firewall rule"
-  type        = string
-  default     = "lb-https"
-}
-
 # Tags and Labels
 variable "instance_tags" {
   description = "Tags for the k3s instance"
@@ -199,42 +144,4 @@ variable "labels" {
     managed-by  = "terraform"
     project     = "k3s-cluster"
   }
-}
-
-# Network Endpoint Group Variables
-variable "neg_name" {
-  description = "Name of the Network Endpoint Group"
-  type        = string
-  default     = "app-network-endpoint-group"
-}
-
-variable "backend_service_name" {
-  description = "Name of the backend service"
-  type        = string
-  default     = "app-backend-service"
-}
-
-variable "health_check_name" {
-  description = "Name of the health check"
-  type        = string
-  default     = "app-health-check"
-}
-
-variable "balancing_mode" {
-  description = "Load balancing mode for the backend service"
-  type        = string
-  default     = "RATE"
-}
-
-variable "max_rate_per_endpoint" {
-  description = "Maximum rate per endpoint"
-  type        = number
-  default     = 100
-}
-
-# Timeouts
-variable "backend_service_timeout" {
-  description = "Timeout for the backend service"
-  type        = number
-  default     = 10
 }

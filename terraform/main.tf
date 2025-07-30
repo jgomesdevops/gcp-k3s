@@ -24,13 +24,6 @@ module "k3s_cluster" {
   service_account_display_name = "K3S Service Account"
   service_account_description  = "K3S Service Account"
 
-  # Load balancer configuration
-  enable_load_balancer = true
-  load_balancer_port   = 80
-  app_nodeport         = 30000
-  health_check_path    = "/health"
-  health_check_port    = 30000
-
   # Labels and tags
   instance_tags = ["this"]
   labels = {

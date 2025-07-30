@@ -8,21 +8,6 @@ output "application_access" {
   value       = module.k3s_cluster.application_access
 }
 
-output "application_url" {
-  description = "URL to access the application"
-  value       = module.k3s_cluster.application_url
-}
-
-output "public_load_balancer_ip" {
-  description = "Public IP address of the load balancer"
-  value       = module.k3s_cluster.public_load_balancer_ip
-}
-
-output "public_application_url" {
-  description = "Public URL to access the application via load balancer"
-  value       = module.k3s_cluster.public_application_url
-}
-
 output "vpc_name" {
   description = "Name of the VPC"
   value       = module.k3s_cluster.vpc_name
