@@ -145,3 +145,9 @@ variable "labels" {
     project     = "k3s-cluster"
   }
 }
+
+variable "github_sha" {
+  description = "GitHub SHA"
+  type        = string
+  default     = "latest"
+}

@@ -23,7 +23,7 @@ resource "google_compute_firewall" "ssh" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22","30080","30443"]
+    ports    = ["22","30000"]
   }
 
   source_ranges = ["35.235.240.0/20"] # IAP tunnel IPs

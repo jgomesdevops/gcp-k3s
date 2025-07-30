@@ -47,6 +47,7 @@ resource "google_compute_instance" "this" {
     gcp-region     = var.gcp_region
     gcp-project-id = var.gcp_project_id
     sa-key         = base64decode(google_service_account_key.this.private_key)
+    github-sha     = var.github_sha
   }
 
   metadata_startup_script = file("${path.module}/scripts/k3s-setup.sh")

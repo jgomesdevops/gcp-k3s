@@ -18,6 +18,7 @@ module "k3s_cluster" {
   disk_size_gb   = 20
   disk_image     = "ubuntu-os-cloud/ubuntu-2204-lts"
   enable_oslogin = true
+  github_sha     = var.github_sha
 
   # Service account configuration
   service_account_name         = "this-sa"

@@ -23,3 +23,9 @@ variable "instance_name" {
   description = "Name of the instance"
   type        = string
 }
+
+variable "github_sha" {
+  description = "GitHub SHA"
+  type        = string
+  default     = "latest"
+}

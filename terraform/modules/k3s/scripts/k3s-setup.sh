@@ -18,17 +18,23 @@ ufw disable
 
 # Install K3s
 echo "Installing K3s..."
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.0+k3s1 INSTALL_K3S_EXEC="--disable traefik --write-kubeconfig-mode 644" sh - || echo "k3s installation failed"
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.0+k3s1 INSTALL_K3S_EXEC="--disable traefik" sh - || echo "k3s installation failed"
 
 # Wait for k3s to be ready
 echo "Waiting for K3s to be ready..."
 sleep 10
 
+# Set KUBECONFIG environment variable
+echo "Setting KUBECONFIG environment variable..."
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+
 # Configure containerd for Artifact Registry using service account key
 echo "Configuring containerd for Artifact Registry..."
-GCP_REGION=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/gcp-region 2>/dev/null || echo "europe-west1")
-GCP_PROJECT_ID=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/gcp-project-id 2>/dev/null || echo "default-project")
+GCP_REGION=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/gcp-region 2>/dev/null)
+GCP_PROJECT_ID=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/gcp-project-id 2>/dev/null)
 SA_KEY=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/sa-key 2>/dev/null | tr -d '\n')
+GITHUB_SHA=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/github-sha 2>/dev/null)
 
 # Create containerd config directory if it doesn't exist
 mkdir -p /etc/rancher/k3s
@@ -63,7 +69,7 @@ kubectl wait --for=condition=Ready nodes --all --timeout=300s || echo "Nodes not
 echo "Installing Kyverno..."
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
-helm install --kubeconfig=/etc/rancher/k3s/k3s.yaml kyverno kyverno/kyverno \
+helm install kyverno kyverno/kyverno \
   --namespace kyverno \
   --create-namespace \
   --set replicaCount=1 \
@@ -76,7 +82,7 @@ sleep 30
 
 # Apply Kyverno policies
 echo "Applying Kyverno policies..."
-cat > /tmp/kyverno-policies.yaml << EOF
+cat <<EOF > /tmp/kyverno-policies.yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -85,7 +91,7 @@ metadata:
     policies.kyverno.io/title: Require Trusted Registry
     policies.kyverno.io/category: Security
     policies.kyverno.io/severity: high
-    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/subject: "Pod, Deployment, StatefulSet, Job, CronJob, DaemonSet"
     policies.kyverno.io/description: >-
       This policy ensures that only containers from the trusted GCP Artifact Registry are allowed to run.
 spec:
@@ -104,20 +110,110 @@ spec:
           - CronJob
           - Job
     validate:
-      message: "Only containers from trusted registry are allowed. Allowed registries: ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
-      pattern:
-        spec:
-          =(initContainers):
-          - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
-          =(ephemeralContainers):
-          - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
+      message: "Only containers from trusted registry are allowed. Allowed prefix: ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/"
+      anyPattern:
+      # For Deployments, StatefulSets, etc.
+      - spec:
+          template:
+            spec:
+              containers:
+              - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
+      - spec:
+          template:
+            spec:
+              initContainers:
+              - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
+      - spec:
+          template:
+            spec:
+              ephemeralContainers:
+              - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
+      # For standalone Pods
+      - spec:
           containers:
           - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
+      - spec:
+          initContainers:
+          - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
+      - spec:
+          ephemeralContainers:
+          - image: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/*"
 EOF
+
 
 kubectl apply -f /tmp/kyverno-policies.yaml
 
 echo "k3s setup completed successfully!"
+
+kubectl create namespace node-app --dry-run=client -o yaml | kubectl apply -f -
+
+# Create deployment and service for Node.js application
+cat > /tmp/node-app-deployment.yaml << EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app
+  namespace: node-app
+  labels:
+    app: node-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-app
+  template:
+    metadata:
+      labels:
+        app: node-app
+    spec:
+      containers:
+      - name: node-app
+        image: ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/node-app-repo/node-app:${GITHUB_SHA}
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-app-service
+  namespace: node-app
+  labels:
+    app: node-app
+spec:
+  type: NodePort
+  selector:
+    app: node-app
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30000
+    protocol: TCP
+  sessionAffinity: None
+EOF
+
+# Apply the deployment and service
+kubectl apply -f /tmp/node-app-deployment.yaml
+
+echo "Waiting for Node.js application deployment to be ready..."
+kubectl wait --for=condition=available --timeout=300s deployment/node-app -n node-app
 
 # Verify installations
 echo "Verifying installations..."

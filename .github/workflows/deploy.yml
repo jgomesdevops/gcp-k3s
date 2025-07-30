@@ -20,6 +20,7 @@ env:
   TF_VAR_gcp_region: ${{ vars.GCP_REGION }}
   TF_VAR_gcp_zone: ${{ vars.GCP_ZONE }}
   TF_VAR_instance_name: this-instance
+  TF_VAR_github_sha: ${{ github.sha }}
 
 jobs:
   # Build and Push Docker Image (first step)
