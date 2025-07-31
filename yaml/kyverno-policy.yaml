@@ -1,0 +1,55 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: trusted-registry
+  annotations:
+    policies.kyverno.io/title: Require Trusted Registry
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: "Pod, Deployment, StatefulSet, Job, CronJob, DaemonSet"
+    policies.kyverno.io/description: >-
+      This policy ensures that only containers from the trusted GCP Artifact Registry are allowed to run.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+  - name: check-trusted-registry
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          - Deployment
+          - StatefulSet
+          - DaemonSet
+          - CronJob
+          - Job
+    validate:
+      message: "Only containers from trusted registry are allowed. Allowed prefix: thisregion-docker.pkg.dev/thisid/"
+      anyPattern:
+      # For Deployments, StatefulSets, etc.
+      - spec:
+          template:
+            spec:
+              containers:
+              - image: "thisregion-docker.pkg.dev/thisid/*"
+      - spec:
+          template:
+            spec:
+              initContainers:
+              - image: "thisregion-docker.pkg.dev/thisid/*"
+      - spec:
+          template:
+            spec:
+              ephemeralContainers:
+              - image: "thisregion-docker.pkg.dev/thisid/*"
+      # For standalone Pods
+      - spec:
+          containers:
+          - image: "thisregion-docker.pkg.dev/thisid/*"
+      - spec:
+          initContainers:
+          - image: "thisregion-docker.pkg.dev/thisid/*"
+      - spec:
+          ephemeralContainers:
+          - image: "thisregion-docker.pkg.dev/thisid/*"

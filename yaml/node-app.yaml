@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jgomesdevops/gcp-k3s
+    path: node-app
+    targetRevision: HEAD
+    helm:
+      values: |
+        image:
+          repository: thisregion-docker.pkg.dev/thisid/node-app-repo/node-app
+          tag: "latest"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: node-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true 
