@@ -9,9 +9,11 @@ on:
         type: string
 
 env:
-  GCP_REGION: europe-west1
-  GCP_ZONE: europe-west1-b
   TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+  TF_VAR_gcp_region: ${{ vars.GCP_REGION }}
+  TF_VAR_gcp_zone: ${{ vars.GCP_ZONE }}
+  TF_VAR_instance_name: this-instance
+  TF_VAR_github_sha: ${{ github.sha }}
 
 jobs:
   terraform-destroy:
@@ -46,7 +48,7 @@ jobs:
 
     - name: Terraform Plan Destroy
       working-directory: ./terraform
-      run: terraform plan -destroy -no-color -out=tfplan-destroy
+      run: terraform plan -destroy -out=tfplan-destroy
 
     - name: Terraform Destroy
       working-directory: ./terraform
