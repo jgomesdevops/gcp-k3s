@@ -102,7 +102,7 @@ variable "service_account_roles" {
   type        = list(string)
   default = [
     "roles/artifactregistry.reader",
-    "roles/logging.logWriter", 
+    "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
     "roles/compute.osLogin",
     "roles/iap.tunnelResourceAccessor"
@@ -149,4 +149,9 @@ variable "github_sha" {
   description = "GitHub SHA"
   type        = string
   default     = "latest"
+}
+
+variable "user_emails" {
+  description = "List of user emails who can access the VM via IAP"
+  type        = list(string)
 }

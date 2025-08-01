@@ -25,6 +25,11 @@ module "k3s_cluster" {
   service_account_display_name = "K3S Service Account"
   service_account_description  = "K3S Service Account"
 
+  # User access configuration
+  user_emails = [
+    "jgomesdevops@gmail.com"
+  ]
+
   # Labels and tags
   instance_tags = ["this"]
   labels = {
