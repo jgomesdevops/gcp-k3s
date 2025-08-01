@@ -95,6 +95,11 @@ kubectl apply -f /tmp/node-app.yaml
 
 echo "Node Application Deployed Successfully!"
 
+# Install readonly service account before Kyverno
+echo "Installing readonly service account before Kyverno..."
+kubectl apply -f https://raw.githubusercontent.com/jgomesdevops/gcp-k3s/main/yaml/readonly-sa.yaml
+echo "Readonly service account installed successfully!"
+
 # Download and deploy Kyverno via ArgoCD
 echo "Configuring Kyverno ArgoCD Application..."
 curl -s https://raw.githubusercontent.com/jgomesdevops/gcp-k3s/main/yaml/kyverno.yaml -o /tmp/kyverno-app.yaml
@@ -122,7 +127,35 @@ kubectl apply -f /tmp/kyverno-policy.yaml
 
 echo "Kyverno policy deployed successfully!"
 
+# Install readonly service account after Kyverno
+echo "Installing readonly service account after Kyverno..."
+kubectl apply -f https://raw.githubusercontent.com/jgomesdevops/gcp-k3s/main/yaml/readonly-sa.yaml
+echo "Readonly service account installed successfully after Kyverno!"
 
+# Generate readonly kubeconfig for all users
+echo "Generating readonly kubeconfig..."
+curl -s https://raw.githubusercontent.com/jgomesdevops/gcp-k3s/main/yaml/readonly-kubeconfig-template.yaml -o /tmp/readonly-kubeconfig-template.yaml
+
+# Get cluster information
+CLUSTER_CA=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+CLUSTER_SERVER=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.server}')
+READONLY_TOKEN=$(kubectl create token readonly-sa -n default)
+
+# Use sed to replace placeholders with actual values
+sed -i \
+    -e "s|CLUSTER_SERVER_PLACEHOLDER|${CLUSTER_SERVER}|g" \
+    -e "s|CLUSTER_CA_PLACEHOLDER|${CLUSTER_CA}|g" \
+    -e "s|READONLY_TOKEN_PLACEHOLDER|${READONLY_TOKEN}|g" \
+    /tmp/readonly-kubeconfig-template.yaml
+
+# Copy the generated kubeconfig to a shared location
+cp /tmp/readonly-kubeconfig-template.yaml /home/readonly-kubeconfig.yaml
+chmod 644 /home/readonly-kubeconfig.yaml
+
+echo "Readonly kubeconfig generated at /home/readonly-kubeconfig.yaml"
+echo "Users can copy this file to ~/.kube/config for readonly access"
+
+echo "Readonly access setup completed for all users!"
 
 # Verify installations
 echo "Verifying installations..."
