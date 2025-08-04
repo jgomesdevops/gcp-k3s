@@ -29,6 +29,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      security-events: write
     
     steps:
     - name: Checkout code
@@ -55,6 +56,16 @@ jobs:
         cd node-app-http-docker
         docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest .
         docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }} .
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.32.0
+      with:
+        image-ref: '${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }}'
+        format: 'table'
+        exit-code: '0'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
 
     - name: Push Docker Image
       run: |
