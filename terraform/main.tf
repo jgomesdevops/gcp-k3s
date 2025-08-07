@@ -37,4 +37,22 @@ module "k3s_cluster" {
     project    = "gcp-k3s"
     team       = "devops"
   }
+
+  # OpenVPN configuration
+  enable_openvpn                       = true
+  openvpn_instance_name                = "openvpn-server"
+  openvpn_machine_type                 = "e2-small"
+  openvpn_disk_size_gb                 = 20
+  openvpn_port                         = 1194
+  openvpn_protocol                     = "udp"
+  openvpn_firewall_name                = "openvpn-udp"
+  openvpn_service_account_name         = "openvpn-sa"
+  openvpn_service_account_display_name = "OpenVPN Service Account"
+  openvpn_service_account_description  = "OpenVPN Service Account"
+  openvpn_instance_tags                = ["openvpn-server"]
+  openvpn_labels = {
+    managed-by = "terraform"
+    project    = "gcp-openvpn"
+    team       = "devops"
+  }
 }

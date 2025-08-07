@@ -128,6 +128,87 @@ variable "app_firewall_name" {
   default     = "app-nodeport"
 }
 
+# OpenVPN Variables
+variable "enable_openvpn" {
+  description = "Enable OpenVPN server"
+  type        = bool
+  default     = false
+}
+
+variable "openvpn_instance_name" {
+  description = "Name of the OpenVPN instance"
+  type        = string
+  default     = "openvpn-server"
+}
+
+variable "openvpn_machine_type" {
+  description = "Machine type for the OpenVPN instance"
+  type        = string
+  default     = "e2-small"
+}
+
+variable "openvpn_disk_size_gb" {
+  description = "Boot disk size in GB for OpenVPN"
+  type        = number
+  default     = 20
+}
+
+variable "openvpn_port" {
+  description = "OpenVPN port (UDP)"
+  type        = number
+  default     = 1194
+}
+
+variable "openvpn_protocol" {
+  description = "OpenVPN protocol (udp or tcp)"
+  type        = string
+  default     = "udp"
+  validation {
+    condition     = contains(["udp", "tcp"], var.openvpn_protocol)
+    error_message = "OpenVPN protocol must be either 'udp' or 'tcp'."
+  }
+}
+
+variable "openvpn_firewall_name" {
+  description = "Name of the OpenVPN firewall rule"
+  type        = string
+  default     = "openvpn-udp"
+}
+
+variable "openvpn_service_account_name" {
+  description = "Name of the OpenVPN service account"
+  type        = string
+  default     = "openvpn-service-account"
+}
+
+variable "openvpn_service_account_display_name" {
+  description = "Display name of the OpenVPN service account"
+  type        = string
+  default     = "OpenVPN Service Account"
+}
+
+variable "openvpn_service_account_description" {
+  description = "Description of the OpenVPN service account"
+  type        = string
+  default     = "Service Account for OpenVPN Server"
+}
+
+variable "openvpn_instance_tags" {
+  description = "Tags for the OpenVPN instance"
+  type        = list(string)
+  default     = ["openvpn-server"]
+}
+
+variable "openvpn_labels" {
+  description = "Labels to apply to OpenVPN resources"
+  type        = map(string)
+  default = {
+    environment = "production"
+    managed-by  = "terraform"
+    project     = "openvpn-server"
+  }
+}
+
 # Tags and Labels
 variable "instance_tags" {
   description = "Tags for the k3s instance"

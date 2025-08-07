@@ -29,4 +29,36 @@ resource "google_compute_firewall" "ssh" {
 
   target_tags   = var.instance_tags
   source_ranges = ["35.235.240.0/20"] # IAP tunnel IPs
+}
+
+# Firewall rule for OpenVPN SSH access (restricted to IAP)
+resource "google_compute_firewall" "openvpn_ssh" {
+  count = var.enable_openvpn ? 1 : 0
+
+  name    = "${var.openvpn_firewall_name}-ssh"
+  network = google_compute_network.this.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  target_tags   = var.openvpn_instance_tags
+  source_ranges = ["35.235.240.0/20"] # IAP tunnel IPs
+}
+
+# Firewall rule for OpenVPN UDP access
+resource "google_compute_firewall" "openvpn" {
+  count = var.enable_openvpn ? 1 : 0
+
+  name    = var.openvpn_firewall_name
+  network = google_compute_network.this.name
+
+  allow {
+    protocol = var.openvpn_protocol
+    ports    = [tostring(var.openvpn_port)]
+  }
+
+  target_tags   = var.openvpn_instance_tags
+  source_ranges = ["0.0.0.0/0"] # Allow from anywhere for VPN access
 } 
