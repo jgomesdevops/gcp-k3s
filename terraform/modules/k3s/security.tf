@@ -5,7 +5,7 @@ resource "google_compute_firewall" "internal" {
 
   allow {
     protocol = "tcp"
-    ports    = ["6443", "10250", "2379", "2380", "10251", "10252"]
+    ports    = ["6443", "10250", "2379", "2380", "10251", "10252", "30000", "30080", "30443"]
   }
 
   allow {
@@ -13,6 +13,7 @@ resource "google_compute_firewall" "internal" {
     ports    = ["8472", "51820"]
   }
 
+  target_tags   = var.instance_tags
   source_ranges = [var.subnet_cidr]
 }
 
@@ -23,8 +24,9 @@ resource "google_compute_firewall" "ssh" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "30000", "30080", "30443"]
+    ports    = ["22"]
   }
 
+  target_tags   = var.instance_tags
   source_ranges = ["35.235.240.0/20"] # IAP tunnel IPs
 } 
