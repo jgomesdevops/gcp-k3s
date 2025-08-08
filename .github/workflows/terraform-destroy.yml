@@ -22,6 +22,9 @@ jobs:
       contents: read
       id-token: write
     if: github.event.inputs.confirm_destroy == 'DESTROY'
+    defaults:
+      run:
+        working-directory: ./terraform
     
     steps:
     - name: Checkout code
@@ -40,16 +43,13 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: "1.5.0"
+        terraform_version: "1.5.4"
 
     - name: Terraform Init
-      working-directory: ./terraform
       run: terraform init
 
     - name: Terraform Plan Destroy
-      working-directory: ./terraform
       run: terraform plan -destroy -out=tfplan-destroy
 
     - name: Terraform Destroy
-      working-directory: ./terraform
-      run: terraform apply -auto-approve tfplan-destroy 
+      run: terraform apply -auto-approve tfplan-destroy

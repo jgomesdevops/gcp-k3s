@@ -1,4 +1,4 @@
-name: Deploy Infrastructure to GCP
+name: Terraform Apply
 
 on:
   push:
@@ -23,7 +23,40 @@ env:
   TF_VAR_github_sha: ${{ github.sha }}
 
 jobs:
-  # Build and Push Docker Image (first step)
+  # Lint Terraform (tflint + fmt + validate)
+  terraform-lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./terraform
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.4"
+
+    - name: Terraform fmt (check)
+      run: terraform fmt -check -recursive
+
+    - name: Setup TFLint
+      uses: terraform-linters/setup-tflint@v4
+      with:
+        tflint_version: v0.58.1
+
+    - name: TFLint init
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: tflint --init
+
+    - name: TFLint run
+      run: tflint
+
+  # Build and Push Docker Image
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
@@ -72,12 +105,16 @@ jobs:
         docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest
         docker push ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }}
 
-  # Terraform Plan (runs on push and PR)
+  # Terraform Plan
   terraform-plan:
+    needs: [terraform-lint]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    defaults:
+      run:
+        working-directory: ./terraform
     
     steps:
     - name: Checkout code
@@ -96,18 +133,15 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: "1.5.0"
+        terraform_version: "1.5.4"
 
     - name: Terraform Init
-      working-directory: ./terraform
       run: terraform init
 
     - name: Terraform Validate
-      working-directory: ./terraform
       run: terraform validate
 
     - name: Terraform Plan
-      working-directory: ./terraform
       run: terraform plan -out=tfplan
 
     - name: Upload Terraform Plan
@@ -116,14 +150,19 @@ jobs:
         name: terraform-plan
         path: terraform/tfplan
 
-  # Terraform Apply (automatic on push to main)
+  # Terraform Apply
   terraform-apply:
     needs: [build-and-push-image, terraform-plan]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'
+    environment:
+      name: production
+    defaults:
+      run:
+        working-directory: ./terraform
     
     steps:
     - name: Checkout code
@@ -142,10 +181,9 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: "1.5.0"
+        terraform_version: "1.5.4"
 
     - name: Terraform Init
-      working-directory: ./terraform
       run: terraform init
 
     - name: Download Terraform Plan
@@ -155,7 +193,6 @@ jobs:
         path: terraform/
 
     - name: Terraform Apply
-      working-directory: ./terraform
       run: terraform apply -auto-approve tfplan
 
 

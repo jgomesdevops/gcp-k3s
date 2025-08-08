@@ -51,7 +51,7 @@ variable "nat_name" {
 variable "instance_name" {
   description = "Name of the k3s instance"
   type        = string
-  default     = "k3s-master"
+  default     = "k3s"
 }
 
 variable "machine_type" {
@@ -120,12 +120,6 @@ variable "ssh_firewall_name" {
   description = "Name of the SSH firewall rule"
   type        = string
   default     = "k3s-ssh"
-}
-
-variable "app_firewall_name" {
-  description = "Name of the application firewall rule"
-  type        = string
-  default     = "app-nodeport"
 }
 
 # OpenVPN Variables
