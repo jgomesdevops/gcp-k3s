@@ -68,9 +68,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Clone node-app-http-docker repository
-      run: git clone https://github.com/eaccmk/node-app-http-docker.git
-
     - name: Google Auth
       id: auth
       uses: google-github-actions/auth@v2
@@ -85,8 +82,8 @@ jobs:
       run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
     - name: Build Docker Image
+      working-directory: ./node-app-docker
       run: |
-        cd node-app-http-docker
         docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:latest .
         docker build -t ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/node-app-repo/node-app:${{ github.sha }} .
 
